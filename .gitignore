@@ -1,0 +1,12 @@
+# R project
+*.Rproj
+.Rproj.user
+
+# Generated files
+data/
+figures/
+mcmc_samples/
+
+# Hidden files
+.*
+!.gitignore
