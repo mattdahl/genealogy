@@ -1,82 +1,76 @@
-#
+############################################
 #	Original script from Clark and Lauderdale's 2012 article "The Genealogy of Law"
 # https://doi.org/10.1093/pan/mps019
 #
 #	Code tidied and modified by Matthew Dahl
-#
+############################################
 
-#set working directory and load packages
+## Set working directory
 setwd('/Users/mattdahl/Documents/nd/research/projects/free_expression_doctrine')
 
-library(foreign)	#to import Stata files
-library(diagram)	#for plotXi function
+## Libs
+library(diagram)	# For plotXi function
 
-## SETTINGS ##
+## Settings
+# Labels
+caseType <- c('Abortion')
+caseTypesLabel <- c('Abortion')
+title <- paste(caseTypesLabel, 'Cases')
 
-caseTypes <- c("Abortion")
+# Simulation
+burn <- 200
+sims <- 1000
+verbose <- 100
 
-caseTypesLabels <- c("Abortion")
-
-
+# Bayesian priors
+eta <- 0
+Founders <- c(1)
 
 #############################################
 #	SIMULATIONS
 #############################################
 
-## for (g in 1:length(caseTypes)){
-	burn <- 200
-	sims <- 1000
-	verbose <- 100
-	title <- paste(caseTypesLabels[1],'Cases')
-	CaseType <- caseTypes[1]
+## Load data, create unique ids for citations
+Citation.Data <- readRDS(file = paste('Data/', caseType, '/', caseType, 'CitationData.rds', sep = ''))
+Case.Data <- readRDS(file = paste('Data/', caseType, '/', caseType, 'Cases.rds', sep = ''))
 
-	## PRIORS ##
-	eta <- 0
-	Founders <- c(1)
+UniqueCaseIDs <- sort(unique(c(Citation.Data$CaseID, Citation.Data$PrecedentID)))
+IntExtIDMap <- UniqueCaseIDs
+ExtIntIDMap <- rep(NA, max(UniqueCaseIDs))
+for (i in 1:length(UniqueCaseIDs)) {
+	ExtIntIDMap[UniqueCaseIDs[i]] <- i
+}
 
-		## bring in data, create unique ids for citations
-		Citation.Data <- haven::read_dta(file=paste('Data/', CaseType, '/', CaseType, 'CitationData.dta',sep=""))
-		Case.Data <- haven::read_dta(file=paste('Data/', CaseType, '/', CaseType, 'Cases.dta',sep=""))
+# Create vector of case names for citing cases
+Names <- rep('NA', max(ExtIntIDMap, na.rm = T))
+for (i in 1:max(ExtIntIDMap, na.rm = T)) {
+	Names[i] <- Case.Data$caseName[Case.Data$CaseID == IntExtIDMap[i]]
+}
 
-		UniqueCaseIDs <- sort(unique(c(Citation.Data$CaseID,Citation.Data$PrecedentID)))
-		IntExtIDMap <- UniqueCaseIDs
-		ExtIntIDMap <- rep(NA,max(UniqueCaseIDs))
-		for (i in 1:length(UniqueCaseIDs)){
-			ExtIntIDMap[UniqueCaseIDs[i]] <- i
-		}
+# Create vector of dates for citing cases
+Year <- rep(NA, max(ExtIntIDMap, na.rm = T))
+for (i in 1:max(ExtIntIDMap, na.rm = T)) {
+	Year[i] <- Case.Data$date[Case.Data$CaseID == IntExtIDMap[i]]
+}
 
-		#create vector of case names for citing cases
-		Names <- rep("NA",max(ExtIntIDMap, na.rm=T))
-		for(i in 1:max(ExtIntIDMap, na.rm=T)){
-			Names[i] <- Case.Data$caseName[Case.Data$CaseID==IntExtIDMap[i]]
-		}
+#create lower triangular matrix of citations
+Y <- matrix(NA, nrow = max(ExtIntIDMap, na.rm = T), ncol = max(ExtIntIDMap, na.rm = T))
+Y[lower.tri(Y)] <- 0
+for (k in 1:dim(Citation.Data)[1]) {
+	Y[ExtIntIDMap[Citation.Data$CaseID[k]], ExtIntIDMap[Citation.Data$PrecedentID[k]]] <- Citation.Data$citations2[k]
+}
 
-		#create vector of dates for citing cases
-		Year <- rep(NA,max(ExtIntIDMap, na.rm=T))
-		for(i in 1:max(ExtIntIDMap, na.rm=T)){
-			Year[i] <- Case.Data$date[Case.Data$CaseID==IntExtIDMap[i]]
-		}
+## LOAD DATA ##
+T <- dim(Y)[1]
+Descendents <- setdiff(1:T, Founders)
 
-		#create lower triangular matrix of citations
-		Y <- matrix(NA,nrow=max(ExtIntIDMap, na.rm=T), ncol=max(ExtIntIDMap, na.rm=T))
-		Y[lower.tri(Y)] <- 0
-		for(k in 1:dim(Citation.Data)[1]){
-			Y[ExtIntIDMap[Citation.Data$CaseID[k]], ExtIntIDMap[Citation.Data$PrecedentID[k]]] <- Citation.Data$citations2[k]
-		}
+##	Call Generic Tree Script
+##	Warning! This will take around 6 hours for 100 cases.
+source('GenericTree1p.R')
 
-		## LOAD DATA ##
-		T <- dim(Y)[1]
-		Descendents <- setdiff(1:T, Founders)
-
-		##	Call Generic Tree Script
-		##	Warning! This will take around 6 hours for 100 cases.
-		source('GenericTree1p.R')
-
-		save(Founders,Descendents,Y,Xi.chain,nu.chain,beta.chain,alpha.chain,BestSim,list=c("Xi.chain","nu.chain","beta.chain","alpha.chain"),file=paste("MCMCSamples/",CaseType,"SavedMCMCSample.Data",sep=""))
-		plotXi(Xi.est,file=paste("TreePlots/",CaseType,"TreePlotBest2.pdf",sep=""),Names=Names,Years=Year,Title=title)
-		plotXi(round(Xi.mean),file=paste("TreePlots/",CaseType,"TreePlotMean.pdf",sep=""),Names=Names,Years=Year,Title=title)
-## }
-
+save(Founders,Descendents,Y,Xi.chain,nu.chain,beta.chain,alpha.chain,BestSim,list=c("Xi.chain","nu.chain","beta.chain","alpha.chain"),file=paste("MCMCSamples/",CaseType,"SavedMCMCSample.Data",sep=""))
+plotXi(Xi.est,file=paste("TreePlots/",CaseType,"TreePlotBest2.pdf",sep=""),Names=Names,Years=Year,Title=title)
+plotXi(round(Xi.mean),file=paste("TreePlots/",CaseType,"TreePlotMean.pdf",sep=""),Names=Names,Years=Year,Title=title)
 
 
 
