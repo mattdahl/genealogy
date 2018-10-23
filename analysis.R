@@ -39,12 +39,6 @@ Case.Data <- readRDS(file = paste('Data/', caseType, '/', caseType, 'Cases.rds',
 UniqueCaseIDs <- sort(unique(c(Citation.Data$CaseID, Citation.Data$PrecedentID)))
 UniqueCaseIDs.length <- length(UniqueCaseIDs)
 
-IntExtIDMap <- UniqueCaseIDs
-ExtIntIDMap <- rep(NA, max(UniqueCaseIDs))
-for (i in 1:length(UniqueCaseIDs)) {
-	ExtIntIDMap[UniqueCaseIDs[i]] <- i
-}
-
 ## Create vectors of case names and dates for citing cases
 Names <- rep('NA', UniqueCaseIDs.length)
 Year <- rep(NA, UniqueCaseIDs.length)
