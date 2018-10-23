@@ -34,43 +34,46 @@ Founders <- c(1)
 Citation.Data <- readRDS(file = paste('Data/', caseType, '/', caseType, 'CitationData.rds', sep = ''))
 Case.Data <- readRDS(file = paste('Data/', caseType, '/', caseType, 'Cases.rds', sep = ''))
 
+## Calculate unique case IDs from the set of cases and precendents
+# (remove duplicate IDs that occur when multiple cases cite the same precedents)
 UniqueCaseIDs <- sort(unique(c(Citation.Data$CaseID, Citation.Data$PrecedentID)))
+UniqueCaseIDs.length <- length(UniqueCaseIDs)
+
 IntExtIDMap <- UniqueCaseIDs
 ExtIntIDMap <- rep(NA, max(UniqueCaseIDs))
 for (i in 1:length(UniqueCaseIDs)) {
 	ExtIntIDMap[UniqueCaseIDs[i]] <- i
 }
 
-# Create vector of case names for citing cases
-Names <- rep('NA', max(ExtIntIDMap, na.rm = T))
-for (i in 1:max(ExtIntIDMap, na.rm = T)) {
-	Names[i] <- Case.Data$caseName[Case.Data$CaseID == IntExtIDMap[i]]
+## Create vectors of case names and dates for citing cases
+Names <- rep('NA', UniqueCaseIDs.length)
+Year <- rep(NA, UniqueCaseIDs.length)
+for (i in 1:UniqueCaseIDs.length) {
+	Names[i] <- Case.Data$caseName[Case.Data$CaseID == UniqueCaseIDs[i]]
+	Year[i] <- Case.Data$date[Case.Data$CaseID == UniqueCaseIDs[i]]
 }
 
-# Create vector of dates for citing cases
-Year <- rep(NA, max(ExtIntIDMap, na.rm = T))
-for (i in 1:max(ExtIntIDMap, na.rm = T)) {
-	Year[i] <- Case.Data$date[Case.Data$CaseID == IntExtIDMap[i]]
-}
-
-#create lower triangular matrix of citations
-Y <- matrix(NA, nrow = max(ExtIntIDMap, na.rm = T), ncol = max(ExtIntIDMap, na.rm = T))
+## Create lower triangular matrix of citations
+Y <- matrix(NA, nrow = UniqueCaseIDs.length, ncol = UniqueCaseIDs.length)
 Y[lower.tri(Y)] <- 0
 for (k in 1:dim(Citation.Data)[1]) {
-	Y[ExtIntIDMap[Citation.Data$CaseID[k]], ExtIntIDMap[Citation.Data$PrecedentID[k]]] <- Citation.Data$citations2[k]
+  Y[
+    match(c(Citation.Data$CaseID[k]), UniqueCaseIDs), # Rows are cases
+    match(c(Citation.Data$PrecedentID[k]), UniqueCaseIDs) # Cols are precedents
+  ] <- Citation.Data$citations2[k]
 }
 
-## LOAD DATA ##
+## Prepare data for the tree generator
 T <- dim(Y)[1]
 Descendents <- setdiff(1:T, Founders)
 
-##	Call Generic Tree Script
-##	Warning! This will take around 6 hours for 100 cases.
-source('GenericTree1p.R')
+## Call the tree generator
+source('tree_generator.R')
 
-save(Founders,Descendents,Y,Xi.chain,nu.chain,beta.chain,alpha.chain,BestSim,list=c("Xi.chain","nu.chain","beta.chain","alpha.chain"),file=paste("MCMCSamples/",CaseType,"SavedMCMCSample.Data",sep=""))
-plotXi(Xi.est,file=paste("TreePlots/",CaseType,"TreePlotBest2.pdf",sep=""),Names=Names,Years=Year,Title=title)
-plotXi(round(Xi.mean),file=paste("TreePlots/",CaseType,"TreePlotMean.pdf",sep=""),Names=Names,Years=Year,Title=title)
+## Save results
+save(Founders,Descendents,Y,Xi.chain,nu.chain,beta.chain,alpha.chain,BestSim,list=c("Xi.chain","nu.chain","beta.chain","alpha.chain"),file=paste("mcmc_samples/",caseType,"SavedMCMCSample.Data",sep=""))
+plotXi(Xi.est,file=paste("figures/TreePlots/",caseType,"TreePlotBest2.pdf",sep=""),Names=Names,Years=Year,Title=title)
+plotXi(round(Xi.mean),file=paste("figures/TreePlots/",caseType,"TreePlotMean.pdf",sep=""),Names=Names,Years=Year,Title=title)
 
 
 
