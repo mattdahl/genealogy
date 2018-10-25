@@ -232,11 +232,11 @@ print(paste("Mean Xi Acceptance Ratio:",round(mean(accept.Xi,na.rm=TRUE),3)))
 
 print(paste("Best Posterior Xi (LL: ",round(max(LL.chain),2),"):",sep=""))
 Xi.est <- Xi.chain[,,BestSim]
-colnames(Xi.est) <- rownames(Xi.est) <- Names
+colnames(Xi.est) <- rownames(Xi.est) <- case_names
 print(Xi.est)
 print("Average Posterior Xi:")
 Xi.mean <- rowMeans(Xi.chain,dims=2)
-colnames(Xi.mean) <- rownames(Xi.mean) <- Names
+colnames(Xi.mean) <- rownames(Xi.mean) <- case_names
 print(round(Xi.mean,2))
 
 print(paste("Posterior Alpha: ",round(alpha.est,2)," (",round(alpha.err,2),")",sep=""))
@@ -249,18 +249,18 @@ Ypredicted <- round(TreePredictedProbabilities(alpha,beta,Xi.est)*rowSums(Y,na.r
 Yresiduals <- Y - Ypredicted
 
 print("Data:")
-colnames(Y) <- rownames(Y) <- Names
+colnames(Y) <- rownames(Y) <- case_names
 print(Y)
 print("Model Predicted Data:")
-colnames(Ypredicted) <- rownames(Ypredicted) <- Names
+colnames(Ypredicted) <- rownames(Ypredicted) <- case_names
 print(Ypredicted)
 print("Residuals:")
-colnames(Yresiduals) <- rownames(Yresiduals) <- Names
+colnames(Yresiduals) <- rownames(Yresiduals) <- case_names
 print(Yresiduals)
 
 
 
-plotXi <- function(Xi,file="TreePlot.pdf",Names,Years,Title){
+plotXi <- function(Xi,file="TreePlot.pdf",case_names,case_years,Title){
 	
 getchildYcoords <- function(posMat,parentID,childrenID,parentminY,parentmaxY){
 	minvec <- (cumsum(OffspringCount[childrenID]) - OffspringCount[childrenID])/sum(OffspringCount[childrenID])*(parentmaxY-parentminY) + parentminY
@@ -281,7 +281,7 @@ library(diagram)
 T <- dim(Xi)[1]
 posMat <- matrix(0,T,2)
 rowCount <- rep(0,T)
-posMat[,1] <- Years
+posMat[,1] <- case_years
 
 for (f in Founders){
 
@@ -314,7 +314,7 @@ posMat <- getchildYcoords(posMat,Founders[f],NextGen,founderminvec[f],foundermax
 posMat[,1:2] <- posMat[,2:1] 
 
 pdf(file=file,width=13,height=18)
-plot(posMat[,1],posMat[,2],col="grey",pch=8,ylim=range(c(Years-5),max(Years+5)),xlim=c(-0.2,1.2),ylab="Year",xlab="",main=Title,axes=FALSE)
+plot(posMat[,1],posMat[,2],col="grey",pch=8,ylim=range(c(case_years-5),max(case_years+5)),xlim=c(-0.2,1.2),ylab="Year",xlab="",main=Title,axes=FALSE)
 axis(2)
 for (t in 1:T){
 	for (t2 in 1:t){
@@ -324,7 +324,7 @@ for (t in 1:T){
 		}
 	}
 for (t in 1:T){
-	text(posMat[t,1],posMat[t,2],Names[t],cex=0.5)
+	text(posMat[t,1],posMat[t,2],case_names[t],cex=0.5)
 	}	
 	
 dev.off()

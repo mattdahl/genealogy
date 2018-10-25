@@ -31,30 +31,31 @@ Founders <- c(1)
 #############################################
 
 ## Load data, create unique ids for citations
-Citation.Data <- readRDS(file = paste('Data/', caseType, '/', caseType, 'CitationData.rds', sep = ''))
-Case.Data <- readRDS(file = paste('Data/', caseType, '/', caseType, 'Cases.rds', sep = ''))
+citation_data <- readRDS(file = paste('Data/', caseType, '/', caseType, 'CitationData.rds', sep = ''))
+case_data <- readRDS(file = paste('Data/', caseType, '/', caseType, 'Cases.rds', sep = ''))
 
 ## Calculate unique case IDs from the set of cases and precendents
 # (remove duplicate IDs that occur when multiple cases cite the same precedents)
-UniqueCaseIDs <- sort(unique(c(Citation.Data$CaseID, Citation.Data$PrecedentID)))
-UniqueCaseIDs.length <- length(UniqueCaseIDs)
+case_ids <- sort(unique(c(citation_data$CaseID, citation_data$PrecedentID)))
+case_ids.length <- length(case_ids)
 
 ## Create vectors of case names and dates for citing cases
-Names <- rep('NA', UniqueCaseIDs.length)
-Year <- rep(NA, UniqueCaseIDs.length)
-for (i in 1:UniqueCaseIDs.length) {
-	Names[i] <- Case.Data$caseName[Case.Data$CaseID == UniqueCaseIDs[i]]
-	Year[i] <- Case.Data$date[Case.Data$CaseID == UniqueCaseIDs[i]]
+case_names <- rep('NA', case_ids.length)
+case_years <- rep(NA, case_ids.length)
+for (i in 1:case_ids.length) {
+  case_names[i] <- case_data$caseName[case_data$CaseID == case_ids[i]]
+  case_years[i] <- case_data$date[case_data$CaseID == case_ids[i]]
 }
 
 ## Create lower triangular matrix of citations
-Y <- matrix(NA, nrow = UniqueCaseIDs.length, ncol = UniqueCaseIDs.length)
+Y <- matrix(NA, nrow = case_ids.length, ncol = case_ids.length)
 Y[lower.tri(Y)] <- 0
-for (k in 1:dim(Citation.Data)[1]) {
+for (i in 1:dim(citation_data)[1]) {
+  # Put the number of case-precedent citations in the Y matrix at position [case, precedent]
   Y[
-    match(c(Citation.Data$CaseID[k]), UniqueCaseIDs), # Rows are cases
-    match(c(Citation.Data$PrecedentID[k]), UniqueCaseIDs) # Cols are precedents
-  ] <- Citation.Data$citations2[k]
+    match(c(citation_data$CaseID[i]), case_ids), # Rows are cases
+    match(c(citation_data$PrecedentID[i]), case_ids) # Cols are precedents
+  ] <- citation_data$citations2[i]
 }
 
 ## Prepare data for the tree generator
@@ -66,5 +67,5 @@ source('tree_generator.R')
 
 ## Save results
 save(Founders, Descendents, Y, Xi.chain, nu.chain, beta.chain, alpha.chain, BestSim, list = c('Xi.chain', 'nu.chain', 'beta.chain', 'alpha.chain'), file = paste('mcmc_samples/', caseType, 'SavedMCMCSample.Data' , sep = ''))
-plotXi(Xi.est, file = paste('figures/TreePlots/', caseType, 'TreePlotBest2.pdf' , sep = ''), Names = Names, Years = Year, Title = title)
-plotXi(round(Xi.mean), file = paste('figures/TreePlots/', caseType, 'TreePlotMean.pdf', sep=''), Names = Names, Years = Year, Title = title)
+plotXi(Xi.est, file = paste('figures/TreePlots/', caseType, 'TreePlotBest2.pdf' , sep = ''), Names = case_names, Years = case_years, Title = title)
+plotXi(round(Xi.mean), file = paste('figures/TreePlots/', caseType, 'TreePlotMean.pdf', sep=''), Names = case_names, Years = case_years, Title = title)
