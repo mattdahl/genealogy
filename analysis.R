@@ -8,13 +8,10 @@
 ## Set working directory
 setwd('/Users/mattdahl/Documents/nd/research/projects/free_expression_doctrine')
 
-## Libs
-library(diagram)	# For plotXi function
-
 ## Settings
 # Labels
 caseType <- c('Abortion')
-caseTypesLabel <- c('Abortion')
+caseTypesLabel <- caseType
 title <- paste(caseTypesLabel, 'Cases')
 
 # Simulation
@@ -22,15 +19,14 @@ burn <- 200
 sims <- 1000
 verbose <- 100
 
-# Bayesian priors
-eta <- 0
+# Number of parents per tree
 Founders <- c(1)
 
 #############################################
-#	Simulations
+#	Analysis script
 #############################################
 
-## Load data, create unique ids for citations
+## Load data
 citation_data <- readRDS(file = paste('Data/', caseType, '/', caseType, 'CitationData.rds', sep = ''))
 case_data <- readRDS(file = paste('Data/', caseType, '/', caseType, 'Cases.rds', sep = ''))
 
@@ -62,10 +58,13 @@ for (i in 1:dim(citation_data)[1]) {
 T <- dim(Y)[1]
 Descendents <- setdiff(1:T, Founders)
 
-## Call the tree generator
+## Estimate the tree
 source('tree_generator.R')
 
-## Save results
+## Save the resulting MCMC estimates
 save(Founders, Descendents, Y, Xi.chain, nu.chain, beta.chain, alpha.chain, BestSim, list = c('Xi.chain', 'nu.chain', 'beta.chain', 'alpha.chain'), file = paste('mcmc_samples/', caseType, 'SavedMCMCSample.Data' , sep = ''))
-plotXi(Xi.est, file = paste('figures/TreePlots/', caseType, 'TreePlotBest2.pdf' , sep = ''), Names = case_names, Years = case_years, Title = title)
-plotXi(round(Xi.mean), file = paste('figures/TreePlots/', caseType, 'TreePlotMean.pdf', sep=''), Names = case_names, Years = case_years, Title = title)
+
+## Plot the results
+source('plotter.R')
+plotXi(Xi.est, file = paste('figures/TreePlots/', caseType, 'TreePlotBest2.pdf' , sep = ''), case_names = case_names, case_years = case_years, Title = title)
+plotXi(round(Xi.mean), file = paste('figures/TreePlots/', caseType, 'TreePlotMean.pdf', sep=''), case_names = case_names, case_years = case_years, Title = title)
