@@ -66,5 +66,5 @@ save(Founders, Descendents, Y, Xi.chain, nu.chain, beta.chain, alpha.chain, Best
 
 ## Plot the results
 source('plotter.R')
-plotXi(Xi.est, file = paste('figures/TreePlots/', caseType, 'TreePlotBest2.pdf' , sep = ''), case_names = case_names, case_years = case_years, Title = title)
-plotXi(round(Xi.mean), file = paste('figures/TreePlots/', caseType, 'TreePlotMean.pdf', sep=''), case_names = case_names, case_years = case_years, Title = title)
+plotXi(Xi.est, file = paste('figures/TreePlots/', caseType, 'TreePlotBest2.pdf' , sep = ''), case_names = case_names, case_years = case_years, title = title)
+plotXi(round(Xi.mean), file = paste('figures/TreePlots/', caseType, 'TreePlotMean.pdf', sep=''), case_names = case_names, case_years = case_years, title = title)
