@@ -12,21 +12,21 @@ AllHub <- NULL
 AllOxford <- NULL
 AllLii <- NULL
 AllNyt <- NULL
-##for(i in 1:length(caseTypes)){
-caseType <- caseTypes[1]
 
-load(file=paste('MCMCSamples/',caseType,'SavedMCMCSample.Data',sep=''))
-Xi <- rowMeans(Xi.chain,dims=2)
-ParentId <- apply(Xi,1,which.max)
-parentMatrix <- matrix(0,nrow=dim(Xi)[1],ncol=dim(Xi)[1])
-for(j in 1:dim(parentMatrix)[1]){
+caseType <- 'Abortion'
+
+load(file = paste('mcmc_samples/', caseType, 'SavedMCMCSample.Data', sep = ''))
+Xi <- rowMeans(Xi.chain, dims=2)
+ParentId <- apply(Xi, 1, which.max)
+parentMatrix <- matrix(0, nrow = dim(Xi)[1], ncol = dim(Xi)[1])
+for (j in 1:dim(parentMatrix)[1]) {
   parentMatrix[j, ParentId[j]] <- 1
 }
 childCases <- colSums(parentMatrix)
 allChildren <- c(allChildren,childCases)
 
-Citation.Data <- haven::read_dta(file=paste('Data/',caseType,'/',caseType,'CitationData.dta',sep=""))
-Case.Data <- haven::read_dta(file=paste('Data/',caseType,'/',caseType,'Cases.dta',sep=""))
+Citation.Data <- readRDS(file = paste('data/', caseType, '/', caseType, 'CitationData.rds', sep= ''))
+Case.Data <- readRDS(file = paste('data/', caseType, '/', caseType, 'Cases.rds', sep= ''))
 
 
 UniqueCaseIDs <- sort(unique(c(Citation.Data$CaseID,Citation.Data$PrecedentID)))
@@ -64,7 +64,6 @@ AllLii <- c(AllLii,Lii)
 AllNyt <- c(AllNyt,Nyt)
 AllHub <- c(AllHub,Hub)	
 AllNames <- c(AllNames,Names)
-##}
 
 
 all.indicators <- cbind(allChildren,AllYears,AllAuthority,AllCentrality,AllOxford,AllLii,AllNyt,AllHub,AllNames)
