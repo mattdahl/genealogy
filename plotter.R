@@ -15,7 +15,7 @@ library(diagram)
 plotXi <- function (Xi, file = 'TreePlot.pdf', case_names, case_years, title) {
   
   # Function that calculates the horizonal positioning for each case
-  get_horizontal_position <- function (position_matrix, parent_id, child_ids, parent_min_position, parent_max_position) {
+  get_horizontal_position <- function (position_matrix, child_ids, parent_min_position, parent_max_position) {
     
     # Calculate the appropriate horizontal position for the case given its number of children
     min_position <- (cumsum(offspring_count[child_ids]) - offspring_count[child_ids]) / sum(offspring_count[child_ids]) * (parent_max_position - parent_min_position) + parent_min_position
@@ -32,7 +32,6 @@ plotXi <- function (Xi, file = 'TreePlot.pdf', case_names, case_years, title) {
       if (length(next_generation_ids) > 0) {
         position_matrix <- get_horizontal_position(
           position_matrix = position_matrix,
-          parent_id = i,
           child_ids = next_generation_ids,
           parent_min_position = min_position[i],
           parent_max_position = max_position[i]
@@ -67,9 +66,9 @@ plotXi <- function (Xi, file = 'TreePlot.pdf', case_names, case_years, title) {
   
   # Calculate the initial horizontal position for the founding case(s)
   founder_count <- length(Founders)
-  founder_min_x <- (1:founder_count - 1) / founder_count
-  founder_max_x <- (1:founder_count) / founder_count
-  founder_center_position <- (founder_min_x + founder_max_x) / 2
+  founder_min_position <- (1:founder_count - 1) / founder_count
+  founder_max_position <- (1:founder_count) / founder_count
+  founder_center_position <- (founder_min_position + founder_max_position) / 2
   
   # Initiate the subsequent positioning calculations
   for (f in 1:founder_count) {	
@@ -83,10 +82,9 @@ plotXi <- function (Xi, file = 'TreePlot.pdf', case_names, case_years, title) {
     # Then, calculate the horizontal position for each case in that generation
     position_matrix <- get_horizontal_position(
       position_matrix = position_matrix,
-      parent_id = Founders[f],
       child_ids = first_generation_ids,
-      parent_min_position = founder_min_x[f],
-      parent_max_position = founder_max_x[f]
+      parent_min_position = founder_min_position[f],
+      parent_max_position = founder_max_position[f]
     )
   }
   
