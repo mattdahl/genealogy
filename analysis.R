@@ -8,6 +8,9 @@
 ## Set working directory
 setwd('/Users/mattdahl/Documents/nd/research/projects/free_expression_doctrine')
 
+## Load helper functions
+source('functions.R')
+
 ## Settings
 # Labels
 caseType <- c('Abortion')

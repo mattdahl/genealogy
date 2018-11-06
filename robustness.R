@@ -1,6 +1,20 @@
+############################################
+#	Original script from Clark and Lauderdale's 2012 article "The Genealogy of Law"
+# https://doi.org/10.1093/pan/mps019
+#
+#	Code tidied and modified by Matthew Dahl
+############################################
+
+## Libs
+library(scales)
+
+
 #############################################
-#	ANALYSIS OF SAMPLES
+#	Robustness checking script
 #############################################
+
+caseTypes <- c('Abortion')
+caseTypesLabels <- c('Abortion')
 
 ## create vectors of variables for figures
 allChildren <- NULL
@@ -32,7 +46,7 @@ Case.Data <- readRDS(file = paste('data/', caseType, '/', caseType, 'Cases.rds',
 UniqueCaseIDs <- sort(unique(c(Citation.Data$CaseID,Citation.Data$PrecedentID)))
 IntExtIDMap <- UniqueCaseIDs
 ExtIntIDMap <- rep(NA,max(UniqueCaseIDs))
-for (j in 1:length(UniqueCaseIDs)){
+for (j in 1:length(UniqueCaseIDs)) {
   ExtIntIDMap[UniqueCaseIDs[j]] <- j
 }
 
@@ -46,7 +60,7 @@ Hub <- rep(NA,max(ExtIntIDMap, na.rm=T))
 Lii <- rep(NA,max(ExtIntIDMap, na.rm=T))
 Oxford <- rep(NA,max(ExtIntIDMap, na.rm=T))
 Nyt <- rep(NA,max(ExtIntIDMap, na.rm=T))
-for(j in 1:max(ExtIntIDMap, na.rm=T)){
+for (j in 1:max(ExtIntIDMap, na.rm=T)) {
   Year[j] <- Case.Data$date[Case.Data$CaseID==IntExtIDMap[j]]
   Authority[j] <- Case.Data$auth[Case.Data$CaseID==IntExtIDMap[j]]
   Centrality[j] <- Case.Data$incent[Case.Data$CaseID==IntExtIDMap[j]]
@@ -69,7 +83,7 @@ AllNames <- c(AllNames,Names)
 all.indicators <- cbind(allChildren,AllYears,AllAuthority,AllCentrality,AllOxford,AllLii,AllNyt,AllHub,AllNames)
 colnames(all.indicators) <- c('allChildren','AllYears','AllAuthority','AllCentrality','AllOxford','AllLii','AllNyt','AllHub','AllNames')
 clean.all.indicators <- all.indicators[is.na(allChildren)==FALSE,]
-for(j in 2:9){
+for (j in 2:9) {
   clean.all.indicators <- clean.all.indicators[is.na(clean.all.indicators[,j])==FALSE,]
 }
 
@@ -77,48 +91,12 @@ for(j in 2:9){
 
 ## model fit ##
 
-##	Function to	Create Posterior Predictive Plot ##
-TreePredictedProbabilities <- function(alpha,beta,Xi){
-  
-  T <- dim(Xi)[1]
-  XipXit <- Xi + t(Xi)
-  
-  TreeDistance <- matrix(0,dim(Xi)[1],dim(Xi)[2])
-  
-  for (t in Descendents){
-    tMat <- matrix(0,T,1)
-    tMat[t,1] <- 1
-    
-    found <- c(rep(0,(t-1)),rep(1,(T-t+1)))
-    foundtwice <- c(rep(0,(t)),rep(1,(T-t)))
-    
-    d <- 0
-    while(sum(foundtwice) < sum(found)){
-      d <- d+1
-      tMat <- XipXit %*% tMat
-      finds <- (tMat > 0)
-      newfinds <- which(finds & (found == 0))
-      oldfinds <- which(finds & (found == 1))
-      TreeDistance[t,newfinds] <- d
-      found[newfinds] <- 1
-      foundtwice[oldfinds] <- 1
-    }
-    
-  }
-  Unconnected <- TreeDistance == 0 
-  piMat <- exp(alpha * Unconnected  + beta * TreeDistance) * as.numeric(lower.tri(Unconnected, diag = FALSE))
-  piMat <- piMat/rowSums(piMat,na.rm=TRUE)
-  piMat[Founders,] <- 0
-  return(piMat)
-}
-
-
 ##	figure comparing actual and predicted citation counts	##
-pdf('PredictedCitations.pdf',width=15,height=12)
+pdf('figures/Robustness/PredictedCitations.pdf',width=15,height=12)
 par(mfrow=c(4,5))
 ##for(i in 1:length(caseTypes)){
 caseType <- caseTypes[1]
-load(file=paste('MCMCSamples/',caseType,'SavedMCMCSample.Data',sep=''))
+load(file=paste('mcmc_samples/',caseType,'SavedMCMCSample.Data',sep=''))
 
 sims <- dim(Xi.chain)[3]
 T <- dim(Xi.chain)[1]
@@ -127,7 +105,7 @@ Descendents <- setdiff(1:dim(Xi.chain)[1], Founders)
 
 PredictedCitationProbabilities <- matrix(0,T,T)
 
-for (sim in 1:sims){
+for (sim in 1:sims) {
   PredictedCitationProbabilities <- PredictedCitationProbabilities + TreePredictedProbabilities(alpha.chain[sim],beta.chain[sim], Xi.chain[,,sim])/sims
 }
 
@@ -155,12 +133,12 @@ dev.off()
 
 
 ## make figure with distribution of parent assignment probabilities
-pdf('Drafts/NewParentProbs.pdf',15,12)
+pdf('figures/Drafts/NewParentProbs.pdf',15,12)
 par(mfrow=c(4,5))
 ##for(i in 1:length(caseTypes)){
 caseType <- caseTypes[1]
 
-load(file=paste('MCMCSamples/',caseType,'SavedMCMCSample.Data',sep=''))
+load(file=paste('mcmc_samples/',caseType,'SavedMCMCSample.Data',sep=''))
 Xi <- rowMeans(Xi.chain,dims=2)
 XiDescendentCountProbs <- apply(Xi,1,max)
 plot(density(XiDescendentCountProbs),main=caseTypesLabels[i], xlab='Posterior Parent Probability', ylab='Density'
@@ -171,7 +149,7 @@ dev.off()
 
 
 ## plot distribution of total children
-pdf('DistributionOfTotalChildren.pdf',6,6)
+pdf('figures/Robustness/DistributionOfTotalChildren.pdf',6,6)
 barplot(table(allChildren), main='Distribution of Total Number\nof Child Cases (Truncated)',
         xlab='Number of Estimated Child Cases',ylab='Density',
         xlim=c(0,14),col='grey')
@@ -181,14 +159,14 @@ dev.off()
 ## figure with distribution of parent age at childbirth
 allAfterChildren <- NULL
 allBeforeChildren <- NULL
-pdf('DistributionOfParentAge.pdf',6,6)
+pdf('figures/Robustness/DistributionOfParentAge.pdf',6,6)
 plot(c(0,40),c(0,.15), main='Distribution of Parent\nAge at Childbirth',
      xlab='Age of Estimated Parent Case',ylab='Density',type='n')
 colors <- c('black',rep('grey',10))
 ##for(i in 1:length(caseTypes)){
 caseType <- caseTypes[1]
 
-load(file=paste('MCMCSamples/',caseType,'SavedMCMCSample.Data',sep=''))
+load(file=paste('mcmc_samples/',caseType,'SavedMCMCSample.Data',sep=''))
 Xi <- rowMeans(Xi.chain,dims=2)
 ParentId <- apply(Xi,1,which.max)
 
@@ -198,13 +176,13 @@ Case.Data <- haven::read_dta(file=paste('Data/',caseType,'/',caseType,'Cases.dta
 UniqueCaseIDs <- sort(unique(c(Citation.Data$CaseID,Citation.Data$PrecedentID)))
 IntExtIDMap <- UniqueCaseIDs
 ExtIntIDMap <- rep(NA,max(UniqueCaseIDs))
-for (j in 1:length(UniqueCaseIDs)){
+for (j in 1:length(UniqueCaseIDs)) {
   ExtIntIDMap[UniqueCaseIDs[j]] <- j
 }
 
 #create vector of dates for citing cases
 Year <- rep(NA,max(ExtIntIDMap, na.rm=T))
-for(j in 1:max(ExtIntIDMap, na.rm=T)){
+for (j in 1:max(ExtIntIDMap, na.rm=T)) {
   Year[j] <- Case.Data$date[Case.Data$CaseID==IntExtIDMap[j]]
 }
 Year <- floor(Year)
@@ -214,10 +192,10 @@ parentMatrix <- matrix(0,nrow=dim(Xi)[1],ncol=dim(Xi)[1])
 parentYears <- matrix(0,nrow=dim(Xi)[1],ncol=dim(Xi)[1])
 ageAtChildbirth <- matrix(0,nrow=dim(Xi)[1],ncol=dim(Xi)[1])
 
-for(j in 1:dim(parentMatrix)[1]){
+for (j in 1:dim(parentMatrix)[1]) {
   parentMatrix[j, ParentId[j]] <- 1
 }
-for(j in 1:dim(parentMatrix)[2]){
+for (j in 1:dim(parentMatrix)[2]) {
   parentYears[,j] <- parentMatrix[,j]*Year
   ageAtChildbirth[,j] <- parentYears[,j] - Year[j]
   
@@ -240,7 +218,7 @@ AllNyt <- AllNyt-1
 LiiByChildren <- NULL
 OxfordByChildren <- NULL
 NytByChildren <- NULL
-for(j in 0:15){
+for (j in 0:15) {
   LiiByChildren[j+1] <- mean(AllLii[allChildren==j], na.rm=TRUE)
   OxfordByChildren[j+1] <- mean(AllOxford[allChildren==j], na.rm=TRUE)
   NytByChildren[j+1] <- mean(AllNyt[allChildren==j], na.rm=TRUE)
@@ -250,7 +228,7 @@ LiiXs <- seq(0:15)[which(!is.na(LiiByChildren))]
 OxfordXs <- seq(0:15)[which(!is.na(OxfordByChildren))]
 NytXs <- seq(0:15)[which(!is.na(NytByChildren))]
 
-pdf('ComparisonWithLists.pdf',12,4)
+pdf('figures/Robustness/ComparisonWithLists.pdf',12,4)
 par(mfrow=c(1,3))
 plot(LiiXs, LiiByChildren[which(!is.na(LiiByChildren))], 
      ylab='Legal Information Institute List Inclusion',xlab='Number of Child Cases',
@@ -271,7 +249,7 @@ dev.off()
 
 
 ## compare estimates of children with Fowler measures
-pdf('Drafts/ComparisonWithFowler.pdf',12,6)
+pdf('figures/Drafts/ComparisonWithFowler.pdf',12,6)
 par(mfrow=c(1,2))
 plot(jitter(rescale(AllAuthority)),jitter(rescale(allChildren)), pch=21, cex=0.75, col='grey',bg='grey',
      xlab='Normalized Fowler and Jeon Authority Score',ylab='Normalized Number of Child Cases',
